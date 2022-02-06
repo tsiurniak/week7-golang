@@ -33,8 +33,14 @@ func main() {
 	}
 
 	r.HandleFunc("/cake", logRequest(jwtService.jwtAuth(users, getCakeHandler))).Methods(http.MethodGet)
+
 	r.HandleFunc("/user/register", logRequest(userService.Register)).Methods(http.MethodPost)
 	r.HandleFunc("/user/jwt", logRequest(wrapJwt(jwtService, userService.JWT))).Methods(http.MethodPost)
+	r.HandleFunc("/user/me", logRequest(userService.Profile)).Methods(http.MethodGet)
+
+	r.HandleFunc("/user/favorite_cake", logRequest(userService.ChangeCake)).Methods(http.MethodPost)
+	r.HandleFunc("/user/email", logRequest(userService.ChangeEmail)).Methods(http.MethodPost)
+	r.HandleFunc("/user/password", logRequest(userService.ChangePassword)).Methods(http.MethodPost)
 
 	srv := http.Server{
 		Addr:    ":8080",

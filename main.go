@@ -18,11 +18,16 @@ func getCakeHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := mux.NewRouter()
+
+	userService := UserService{repository: NewInMemoryUserStorage()}
 	r.HandleFunc("/cake", getCakeHandler).Methods(http.MethodGet)
+	r.HandleFunc("/user/register", userService.Register).Methods(http.MethodPost)
+
 	srv := http.Server{
 		Addr:    ":8080",
 		Handler: r,
 	}
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	go func() {

@@ -11,17 +11,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func getCakeHandler(w http.ResponseWriter, r *http.Request) {
+func getCakeHandler(w http.ResponseWriter, r *http.Request, u User) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("cake"))
+	w.Write([]byte(u.FavoriteCake))
+}
+
+func wrapJwt(jwt *JWTService, f func(http.ResponseWriter, *http.Request, *JWTService)) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		f(rw, r, jwt)
+	}
 }
 
 func main() {
 	r := mux.NewRouter()
 
-	userService := UserService{repository: NewInMemoryUserStorage()}
-	r.HandleFunc("/cake", logRequest(getCakeHandler)).Methods(http.MethodGet)
+	users := NewInMemoryUserStorage()
+	userService := UserService{repository: users}
+	jwtService, err := NewJWTService("pubkey.rsa", "privkey.rsa")
+	if err != nil {
+		panic(err)
+	}
+
+	r.HandleFunc("/cake", logRequest(jwtService.jwtAuth(users, getCakeHandler))).Methods(http.MethodGet)
 	r.HandleFunc("/user/register", logRequest(userService.Register)).Methods(http.MethodPost)
+	r.HandleFunc("/user/jwt", logRequest(wrapJwt(jwtService, userService.JWT))).Methods(http.MethodPost)
 
 	srv := http.Server{
 		Addr:    ":8080",
@@ -38,7 +51,7 @@ func main() {
 		srv.Shutdown(ctx)
 	}()
 	log.Println("Server started, hit Ctrl+C to stop")
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	if err != nil {
 		log.Println("Server exited with error:", err)
 	}

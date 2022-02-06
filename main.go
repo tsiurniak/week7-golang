@@ -20,8 +20,8 @@ func main() {
 	r := mux.NewRouter()
 
 	userService := UserService{repository: NewInMemoryUserStorage()}
-	r.HandleFunc("/cake", getCakeHandler).Methods(http.MethodGet)
-	r.HandleFunc("/user/register", userService.Register).Methods(http.MethodPost)
+	r.HandleFunc("/cake", logRequest(getCakeHandler)).Methods(http.MethodGet)
+	r.HandleFunc("/user/register", logRequest(userService.Register)).Methods(http.MethodPost)
 
 	srv := http.Server{
 		Addr:    ":8080",

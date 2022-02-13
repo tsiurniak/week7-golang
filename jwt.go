@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/openware/rango/pkg/auth"
 )
@@ -23,8 +24,7 @@ func NewJWTService(privKeyPath, pubKeyPath string) (*JWTService, error) {
 }
 
 func (j *JWTService) GenearateJWT(u User) (string, error) {
-	return auth.ForgeToken("empty", u.Email, "empty", 0, j.keys.
-		PrivateKey, nil)
+	return auth.ForgeToken("empty", u.Email, "empty", 0, j.keys.PrivateKey, nil)
 }
 func (j *JWTService) ParseJWT(jwt string) (auth.Auth, error) {
 	return auth.ParseAndValidate(jwt, j.keys.PublicKey)
@@ -36,6 +36,7 @@ type JWTParams struct {
 }
 
 func (u *UserService) JWT(w http.ResponseWriter, r *http.Request, jwtService *JWTService) {
+	startTime := time.Now()
 	params := &JWTParams{}
 	err := json.NewDecoder(r.Body).Decode(params)
 	if err != nil {
@@ -59,6 +60,9 @@ func (u *UserService) JWT(w http.ResponseWriter, r *http.Request, jwtService *JW
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(token))
+	duration := time.Since(startTime)
+	responseTimeHistogram.WithLabelValues("/user/jwt").Observe(duration.Seconds())
+
 }
 
 type ProtectedHandler func(rw http.ResponseWriter, r *http.Request, u User)
@@ -74,11 +78,13 @@ func (j *JWTService) jwtAuth(users UserRepository, h ProtectedHandler) http.Hand
 			return
 		}
 		user, err := users.Get(auth.Email)
+
 		if err != nil {
 			rw.WriteHeader(401)
 			rw.Write([]byte("unauthorized"))
 			return
 		}
+
 		h(rw, r, user)
 	}
 }

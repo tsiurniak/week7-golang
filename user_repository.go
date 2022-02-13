@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/md5"
 	"errors"
 	"os"
 	"sync"
@@ -12,6 +13,17 @@ type InMemoryUserStorage struct {
 }
 
 func NewInMemoryUserStorage() *InMemoryUserStorage {
+	passwordDigest := md5.New().Sum([]byte(os.Getenv("CAKE_ADMIN_PASSWORD")))
+	sa := User{
+		Email:          os.Getenv("CAKE_ADMIN_EMAIL"),
+		PasswordDigest: string(passwordDigest),
+		Role:           "superadmin",
+		FavoriteCake:   "BiscuitCake",
+	}
+
+	newStorage := make(map[string]User)
+	newStorage[os.Getenv("CAKE_ADMIN_EMAIL")] = sa
+
 	return &InMemoryUserStorage{
 		lock:    sync.RWMutex{},
 		storage: make(map[string]User),

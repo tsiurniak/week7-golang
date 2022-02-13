@@ -23,7 +23,6 @@ func (w *logWriter) Write(p []byte) (int, error) {
 	w.response.Write(p)
 	return w.ResponseWriter.Write(p)
 }
-
 func logRequest(h http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		writer := &logWriter{
@@ -34,13 +33,14 @@ func logRequest(h http.HandlerFunc) http.HandlerFunc {
 			log.Println("Could not read request body", err)
 			handleError(errors.New("could not read request"), rw)
 			return
+
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 		started := time.Now()
 		h(writer, r)
 		done := time.Since(started)
-		log.Printf(
-			"PATH: %s -> %d. Finished in %v.\n\tParams: %s\n\tResponse: %s",
+		log.Printf("PATH: %s -> %d. Finished in %v.\n\tParams: %s\n\tResponse: %s",
 			r.URL.Path,
 			writer.statusCode,
 			done,
@@ -48,4 +48,5 @@ func logRequest(h http.HandlerFunc) http.HandlerFunc {
 			writer.response.String(),
 		)
 	}
+
 }

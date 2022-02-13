@@ -13,14 +13,14 @@ import (
 )
 
 func getCakeHandler(w http.ResponseWriter, r *http.Request, u User) {
-	startTime := time.Now()
-
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(u.FavoriteCake))
-	duration := time.Since(startTime)
-	responseTimeHistogram.WithLabelValues("/cake").Observe(duration.Seconds())
+}
 
-	// getCakeTime.Observe(float64())
-	numberOfCakesGiven.Inc()
+func wrapJwt(jwt *JWTService, f func(http.ResponseWriter, *http.Request, *JWTService)) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		f(rw, r, jwt)
+	}
 }
 
 func main() {
@@ -76,10 +76,3 @@ func main() {
 	}
 	log.Println("Good bye :)")
 }
-
-func wrapJwt(jwt *JWTService, f func(http.ResponseWriter, *http.Request, *JWTService)) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		f(rw, r, jwt)
-	}
-}
-
